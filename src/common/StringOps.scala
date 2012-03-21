@@ -29,6 +29,7 @@ trait StringOps extends Variables with OverloadHack {
 
   def infix_trim(s: Rep[String])(implicit ctx: SourceContext) = string_trim(s)
   def infix_split(s: Rep[String], separators: Rep[String])(implicit ctx: SourceContext) = string_split(s, separators)
+  def split(s: Rep[String], separators: Rep[String], limit: Rep[Int])(implicit ctx: SourceContext) = string_split_limit(s, separators, limit)
 
   object String {
     def valueOf(a: Rep[Any])(implicit ctx: SourceContext) = string_valueof(a)
@@ -37,6 +38,7 @@ trait StringOps extends Variables with OverloadHack {
   def string_plus(s: Rep[Any], o: Rep[Any])(implicit ctx: SourceContext): Rep[String]
   def string_trim(s: Rep[String])(implicit ctx: SourceContext): Rep[String]
   def string_split(s: Rep[String], separators: Rep[String])(implicit ctx: SourceContext): Rep[Array[String]]
+  def string_split_limit(s: Rep[String], separators: Rep[String], limit: Rep[Int])(implicit ctx: SourceContext): Rep[Array[String]]
   def string_valueof(d: Rep[Any])(implicit ctx: SourceContext): Rep[String]
 }
 
@@ -44,11 +46,13 @@ trait StringOpsExp extends StringOps with VariablesExp {
   case class StringPlus(s: Exp[Any], o: Exp[Any]) extends Def[String]
   case class StringTrim(s: Exp[String]) extends Def[String]
   case class StringSplit(s: Exp[String], separators: Exp[String]) extends Def[Array[String]]
+  case class StringSplitLimit(s: Exp[String], separators: Exp[String], limit: Exp[Int]) extends Def[Array[String]]
   case class StringValueOf(a: Exp[Any]) extends Def[String]
 
   def string_plus(s: Exp[Any], o: Exp[Any])(implicit ctx: SourceContext): Rep[String] = StringPlus(s,o)
   def string_trim(s: Exp[String])(implicit ctx: SourceContext) : Rep[String] = StringTrim(s)
   def string_split(s: Exp[String], separators: Exp[String])(implicit ctx: SourceContext) : Rep[Array[String]] = StringSplit(s, separators)
+  def string_split_limit(s: Exp[String], separators: Exp[String], limit: Exp[Int])(implicit ctx: SourceContext): Rep[Array[String]] = StringSplitLimit(s, separators, limit)
   def string_valueof(a: Exp[Any])(implicit ctx: SourceContext) = StringValueOf(a)
 
   override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = (e match {
@@ -65,6 +69,7 @@ trait ScalaGenStringOps extends ScalaGenBase {
     case StringPlus(s1,s2) => emitValDef(sym, "%s+%s".format(quote(s1), quote(s2)))
     case StringTrim(s) => emitValDef(sym, "%s.trim()".format(quote(s)))
     case StringSplit(s, sep) => emitValDef(sym, "%s.split(%s)".format(quote(s), quote(sep)))
+    case StringSplitLimit(s, sep, limit) => emitValDef(sym, "%s.split(%s, %d)".format(quote(s), quote(sep), quote(limit).toInt))
     case StringValueOf(a) => emitValDef(sym, "java.lang.String.valueOf(%s)".format(quote(a)))
     case _ => super.emitNode(sym, rhs)
   }
